@@ -1,8 +1,8 @@
 {
-  "name": "net.breschoun.encryptedriptide",
+  "name": "net.bschoun.encryptide",
   "version": "1.0.0",
-  "displayName": "Encrypted Riptide",
-  "description": "Encryption layer for Riptide Networking.",
+  "displayName": "Encryptide",
+  "description": "Hybrid cryptosystem for Riptide Networking.",
   "unity": "2019.4",
   "license": "MIT",
   "author": {
@@ -15,12 +15,14 @@
   "keywords": [
     "encrypted",
     "encryption",
+    "cryptosystem",
+    "encryptide",
     "riptide",
     "networking",
     "multiplayer"
   ],
   "repository": {
-    "url": "https://github.com/bschoun/Encrypted-Riptide",
+    "url": "https://github.com/bschoun/Encryptide",
     "type": "git"
   }
 }
