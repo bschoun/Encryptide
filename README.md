@@ -114,7 +114,7 @@ After pre-processing in the ``Send()`` method, the message is constructed like t
 
 And upon receiving a message and passing it to the ``OnMessageReceived()`` function, the message is decrypted (if needed) and reconstructed into its original form (unless being relayed by the server).
 
-### Known issues
+## Known issues
 
 - When a client is acting as a server, it's currently encrypting and decrypting messages sent to itself. Can see if we can somehow disallow that to reduce overhead.
 - From a design perspective, there's some method/member hiding going on in `Encryptide.Server` due to some methods not being virtual that I want to be virtual and some members I need to access being private/internal. While not ideal, I chose to do this to avoid making pull requests to Riptide and to avoid maintaining my own fork of Riptide. I can revisit these decisions later when this project is more stable.
