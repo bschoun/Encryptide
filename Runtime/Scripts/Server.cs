@@ -179,6 +179,9 @@ namespace Encryptide
                     message = ProcessMessage(message);
                 }
             }
+            else {
+                message = ProcessMessage(message);
+            }
 
             base.OnMessageReceived(message, fromConnection);
         }
