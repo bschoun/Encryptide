@@ -173,9 +173,11 @@ namespace Encryptide
 
             // If we're not relaying, we need to process the message (get rid of the encryption byte, decrypt if needed)
             // If we are relaying, we keep the message as-is and send it on
-            if (!relayFilterIds.Contains(messageId))
-            {
-                message = ProcessMessage(message);
+            if (relayFilterIds != null) {
+                if (!relayFilterIds.Contains(messageId))
+                {
+                    message = ProcessMessage(message);
+                }
             }
 
             base.OnMessageReceived(message, fromConnection);
