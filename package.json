@@ -1,0 +1,26 @@
+{
+  "name": "net.breschoun.encryptedriptide",
+  "version": "1.0.0",
+  "displayName": "Encrypted Riptide",
+  "description": "Encryption layer for Riptide Networking.",
+  "unity": "2019.4",
+  "license": "MIT",
+  "author": {
+    "name": "Breawn Schoun",
+    "email": "breawnschoun@gmail.com"
+  },
+  "dependencies": {
+    "net.tomweiland.riptide": "2.0.0"
+  },
+  "keywords": [
+    "encrypted",
+    "encryption",
+    "riptide",
+    "networking",
+    "multiplayer"
+  ],
+  "repository": {
+    "url": "https://github.com/bschoun/Encrypted-Riptide",
+    "type": "git"
+  }
+}
