@@ -163,6 +163,26 @@ namespace Encryptide
             base.Send(message, toClient, shouldRelease);
         }
 
+                /// <summary>Sends a message to all connected clients.</summary>
+        /// <param name="message">The message to send.</param>
+        /// <param name="shouldRelease">Whether or not to return the message to the pool after it is sent.</param>
+        /// <inheritdoc cref="Client.Send(Message, bool)"/>
+        public void SendToAll(Message message, bool shouldRelease = true, bool encrypt = true)
+        {
+            message = this.PrepareMessageToSend(message, encrypt);
+            base.SendToAll(message, shouldRelease);
+        }
+        /// <summary>Sends a message to all connected clients except the given one.</summary>
+        /// <param name="message">The message to send.</param>
+        /// <param name="exceptToClientId">The numeric ID of the client to <i>not</i> send the message to.</param>
+        /// <param name="shouldRelease">Whether or not to return the message to the pool after it is sent.</param>
+        /// <inheritdoc cref="Client.Send(Message, bool)"/>
+        public void SendToAll(Message message, ushort exceptToClientId, bool shouldRelease = true, bool encrypt = true)
+        {
+            message = this.PrepareMessageToSend(message, encrypt);
+            base.SendToAll(message, exceptToClientId, shouldRelease);
+        }
+
         /// <summary>Adds missing data back in (encryption byte) when relaying.</summary>
         /// <param name="message">The received message.</param>
         /// <param name="fromConnection">The client from which the message was received.</param>
