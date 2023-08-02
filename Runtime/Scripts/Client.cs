@@ -25,6 +25,11 @@ namespace Encryptide
         /// </summary>
         public string AppSecret { private get; set; } = null;
 
+        /// <summary>
+        /// Whether to encrypt data by default.
+        /// </summary>
+        private bool encryptByDefault = false;
+
         #region Initialization
 
         /// <summary>
@@ -32,7 +37,8 @@ namespace Encryptide
         /// </summary>
         /// <param name="logName">Log name</param>
         /// <param name="secret">Shared secret between client and server.</param>
-        public Client(string logName = "CLIENT", string secret = null) : base(logName)
+        /// <param name="encryptByDefault">Whether to automatically encrypt data.</param>
+        public Client(string logName = "CLIENT", string secret = null, bool encryptByDefault) : base(logName)
         {
             // Create own public/private RSA keys
             rsa = RSA.Create();
@@ -42,6 +48,7 @@ namespace Encryptide
                 // Set the secret identifier shared between server/client
                 AppSecret = secret;
             }
+            this.encryptByDefault = encryptByDefault;
         }
         #endregion
 
@@ -52,10 +59,10 @@ namespace Encryptide
         /// </summary>
         /// <param name="message">Message to send.</param>
         /// <param name="shouldRelease">Whether message should be released.</param>
-        /// <param name="encrypt">Whether to encrypt message.</param>
-        public void Send(Message message, bool shouldRelease = true, bool encrypt = true)
+        /// <param name="encryption">Whether to encrypt message.</param>
+        public void Send(Message message, bool shouldRelease = true, Encryption encryption = Encryption.Default)
         {
-            message = this.PrepareMessageToSend(message, encrypt);
+            message = this.PrepareMessageToSend(message, encryption);
             base.Send(message, shouldRelease);
         }
 
@@ -151,7 +158,7 @@ namespace Encryptide
             encryptedMessage.AddBytes(encryptedAppSecret);
 
             // Send the encrypted secret to the server. The message is already encrypted so don't do it again
-            Send(encryptedMessage, encrypt: false);
+            Send(encryptedMessage, encryption: Encryption.None);
         }
 
         /// <summary>
@@ -204,9 +211,9 @@ namespace Encryptide
         /// Prepares message to be sent by adding an encryption byte and possibly encrypting the data.
         /// </summary>
         /// <param name="message">Message to be sent.</param>
-        /// <param name="encrypt">Whether or not to encrypt the data.</param>
+        /// <param name="encryption">Whether or not to encrypt the data.</param>
         /// <returns>The prepared message.</returns>
-        private Message PrepareMessageToSend(Message message, bool encrypt)
+        private Message PrepareMessageToSend(Message message, Encryption encryption)
         {
             // Get the id
             ushort messageId = message.GetUShort();
@@ -218,10 +225,24 @@ namespace Encryptide
             message = Message.Create(message.SendMode, messageId);
 
             // Add a byte that specifies whether the message is encrypted
-            message.AddByte((byte)(encrypt ? 1 : 0));
+            if (encryption == Encryption.None || encryption == Encryption.Aes)
+            {
+                message.AddByte((byte)encryption);
+            }
+            else if (encryption == Encryption.Default)
+            {
+                if (encryptByDefault)
+                {
+                    message.AddByte((byte)1);
+                }
+                else
+                {
+                    message.AddByte((byte)0);
+                }
+            }
 
             // If we want to encrypt, add the encrypted bytes. If not, add the bytes as-is
-            if (encrypt)
+            if (encryption == Encryption.Aes || (encryption == Encryption.Default && encryptByDefault))
             {
                 message.AddBytes(aes.Encrypt(bytes), false);
             }

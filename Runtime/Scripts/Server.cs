@@ -9,6 +9,12 @@ using System.Text;
 
 namespace Encryptide
 {
+    public enum Encryption : byte
+    {
+        None, 
+        Aes, 
+        Default
+    }
     public class Server : Riptide.Server
     {
         /// <summary>
@@ -37,6 +43,11 @@ namespace Encryptide
         /// Dictionary of pending connections' encryption (RSA) keys.
         /// </summary>
         private Dictionary<string, RSA> pendingConnectionsEncryptionData = new Dictionary<string, RSA>();
+
+        /// <summary>
+        /// Whether to encrypt data by default.
+        /// </summary>
+        private bool encryptByDefault = false;
 
         /// <summary>
         /// List of relay filter ids.
@@ -105,7 +116,7 @@ namespace Encryptide
         #endregion
 
         #region Initialization
-        public Server(string logName = "SERVER", string secret = null) : base(logName)
+        public Server(string logName = "SERVER", string secret = null, bool encryptByDefault = false) : base(logName)
         {
             // Create public/private RSA keys
             rsa = RSA.Create();
@@ -121,6 +132,7 @@ namespace Encryptide
                 // Set AppSecret that will need to match with any connecting clients
                 AppSecret = secret;
             }
+            this.encryptByDefault = encryptByDefault;
         }
 
         /// <summary>
@@ -143,10 +155,10 @@ namespace Encryptide
         /// <param name="message">Message to send.</param>
         /// <param name="toClient">Client to send the message to.</param>
         /// <param name="shouldRelease">Whether message should be released at the end.</param>
-        /// <param name="encrypt">Whether message data should be encrypted (default = true)</param>
-        public void Send(Message message, Connection toClient, bool shouldRelease = true, bool encrypt = true)
+        /// <param name="encryption">Whether message data should be encrypted</param>
+        public void Send(Message message, Connection toClient, bool shouldRelease = true, Encryption encryption = Encryption.Default)
         {
-            message = this.PrepareMessageToSend(message, encrypt);
+            message = this.PrepareMessageToSend(message, encryption);
             base.Send(message, toClient, shouldRelease);
         }
 
@@ -156,20 +168,20 @@ namespace Encryptide
         /// <param name="message">Message to send.</param>
         /// <param name="toClient">Client to send the message to.</param>
         /// <param name="shouldRelease">Whether message should be released at the end.</param>
-        /// <param name="encrypt">Whether message data should be encrypted (default = true)</param>
-        public void Send(Message message, ushort toClient, bool shouldRelease = true, bool encrypt = true)
+        /// <param name="encryption">Whether message data should be encrypted</param>
+        public void Send(Message message, ushort toClient, bool shouldRelease = true, Encryption encryption = Encryption.Default)
         {
-            message = this.PrepareMessageToSend(message, encrypt);
+            message = this.PrepareMessageToSend(message, encryption);
             base.Send(message, toClient, shouldRelease);
         }
 
-                /// <summary>Sends a message to all connected clients.</summary>
+        /// <summary>Sends a message to all connected clients.</summary>
         /// <param name="message">The message to send.</param>
         /// <param name="shouldRelease">Whether or not to return the message to the pool after it is sent.</param>
         /// <inheritdoc cref="Client.Send(Message, bool)"/>
-        public void SendToAll(Message message, bool shouldRelease = true, bool encrypt = true)
+        public void SendToAll(Message message, bool shouldRelease = true, Encryption encryption = Encryption.Default)
         {
-            message = this.PrepareMessageToSend(message, encrypt);
+            message = this.PrepareMessageToSend(message, encryption);
             base.SendToAll(message, shouldRelease);
         }
         /// <summary>Sends a message to all connected clients except the given one.</summary>
@@ -177,9 +189,9 @@ namespace Encryptide
         /// <param name="exceptToClientId">The numeric ID of the client to <i>not</i> send the message to.</param>
         /// <param name="shouldRelease">Whether or not to return the message to the pool after it is sent.</param>
         /// <inheritdoc cref="Client.Send(Message, bool)"/>
-        public void SendToAll(Message message, ushort exceptToClientId, bool shouldRelease = true, bool encrypt = true)
+        public void SendToAll(Message message, ushort exceptToClientId, bool shouldRelease = true, Encryption encryption = Encryption.Default)
         {
-            message = this.PrepareMessageToSend(message, encrypt);
+            message = this.PrepareMessageToSend(message, encryption);
             base.SendToAll(message, exceptToClientId, shouldRelease);
         }
 
@@ -304,7 +316,7 @@ namespace Encryptide
             message.AddBytes(publicParameters.Exponent, false);
 
             // Send the data to the client. No encryption since we're sending a public key
-            Send(message, pendingConnection, encrypt: false);
+            Send(message, pendingConnection, encryption: Encryption.None);
         }
 
         /// <summary>
@@ -356,7 +368,7 @@ namespace Encryptide
             encryptedAESMessage.AddBytes(encryptedSymmetricIV);
 
             // Send the encrypted Aes session key to the client. Already encrypted, set encrypt to false
-            Send(encryptedAESMessage, pendingConnections[connection.ToString()], encrypt: false);
+            Send(encryptedAESMessage, pendingConnections[connection.ToString()], encryption: Encryption.None);
 
             // Accept the connection, remove from pending connections
             Accept(pendingConnections[connection.ToString()]);
@@ -423,7 +435,7 @@ namespace Encryptide
         /// <param name="message">Message to be sent.</param>
         /// <param name="encrypt">Whether or not to encrypt the data.</param>
         /// <returns>The prepared message.</returns>
-        private Message PrepareMessageToSend(Message message, bool encrypt)
+        private Message PrepareMessageToSend(Message message, Encryption encryption)
         {
             // Get the id
             ushort messageId = message.GetUShort();
@@ -435,10 +447,24 @@ namespace Encryptide
             message = Message.Create(message.SendMode, messageId);
 
             // Add a byte that specifies whether the message is encrypted
-            message.AddByte((byte)(encrypt ? 1 : 0));
+            if (encryption == Encryption.None || encryption == Encryption.Aes)
+            {
+                message.AddByte((byte)encryption);
+            }
+            else if (encryption == Encryption.Default)
+            {
+                if (encryptByDefault)
+                {
+                    message.AddByte((byte)1);
+                }
+                else
+                {
+                    message.AddByte((byte)0);
+                }
+            }
 
             // If we want to encrypt, add the encrypted bytes. If not, add the bytes as-is
-            if (encrypt)
+            if (encryption == Encryption.Aes || (encryption == Encryption.Default && encryptByDefault))
             {
                 message.AddBytes(aes.Encrypt(bytes), false);
             }
