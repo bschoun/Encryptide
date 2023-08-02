@@ -38,7 +38,7 @@ namespace Encryptide
         /// <param name="logName">Log name</param>
         /// <param name="secret">Shared secret between client and server.</param>
         /// <param name="encryptByDefault">Whether to automatically encrypt data.</param>
-        public Client(string logName = "CLIENT", string secret = null, bool encryptByDefault) : base(logName)
+        public Client(string logName = "CLIENT", string secret = null, bool encryptByDefault = false) : base(logName)
         {
             // Create own public/private RSA keys
             rsa = RSA.Create();
