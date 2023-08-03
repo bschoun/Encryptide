@@ -25,7 +25,14 @@ To use Encryptide, you would need to replace instantiations of ``Riptide.Server`
 Encryptide.Server server = new Encryptide.Server();
 Encryptide.Client client = new Encryptide.Client();
 ```
-Both of these classes have a member called `AppSecret`, which is used to validate the connection between a client and a server. The same string must be known to both. You would need to set the server's `AppSecret` before calling its `Start` method, and the client's before calling its `Connect()` method.
+
+There are a few optional parameters in the constructors for both classes:
+
+- ``logName`` - How this instance will be logged using RiptideLogger (default is "CLIENT" for the ``Client`` class and "SERVER" for the ``Server`` class.
+- ``secret`` - Sets the `AppSecret` class member (if not null).
+- ``encryptByDefault`` - Whether to encrypt the data by default (default is `false`).
+
+ Both classes have a member called `AppSecret`, which validates the connection between the client and server. The same string must be known to both. You would need to set the server's `AppSecret` before calling its `Start()` method, and the client's before calling its `Connect()` method. If you don't set the `secret` parameter in the constructor, you would set `AppSecret` directly like so:
 
 ```csharp
 string appSecret = "<APP SECRET - PLEASE REPLACE>";
@@ -51,11 +58,18 @@ you would set it using:
 server.SetRelayFilter(typeof(MessageId), MessageId.SpawnPlayer, MessageId.PlayerMovement);
 ```
 
-That's basically it! ``client`` and ``server`` will by default send messages with their data encrypted, and will automatically decrypt incoming messages. However, if you would like to send a message unencrypted, you can call the client or server's ``Send()`` method and set the `encrypted` parameter to `false`:
+If you set the ``encryptByDefault`` parameter in the constructor to true, messages will now be sent encrypted automatically; otherwise, they will be sent unencrypted automatically. You can make the decision to encrypt or not for individual messages as well by setting the ``encryption`` parameter in ``Send()`` and ``SendToAll()`` functions:
 
 ```csharp
-client.Send(message, encrypted: false);
-server.Send(message, clientId, encrypted: false);
+// Sends encrypted messages
+client.Send(message, encryption: Encryption.Aes);
+server.Send(message, clientId, encryption: Encryption.Aes);
+server.SendToAll(message, encryption: Encryption.Aes);
+
+// Sends unencrypted messages
+client.Send(message, encryption: Encryption.None);
+server.Send(message, clientId, encryption: Encryption.None);
+server.SendToAll(message, encryption: Encryption.None);
 ```
 
 ## How it works
