@@ -25,6 +25,8 @@ namespace Encryptide
         /// </summary>
         public string AppSecret { private get; set; } = null;
 
+        public string PinNumber { private get; set; } = null;
+
         /// <summary>
         /// Whether to encrypt data by default.
         /// </summary>
@@ -121,7 +123,7 @@ namespace Encryptide
                     // Server sent public RSA key
                     case (ushort)HandshakeMessageId.AsymmetricKey:
                         RiptideLogger.Log(LogType.Info, LogName, $"Received public RSA key from server {connection}.");
-                        SendAppSecret(message);
+                        SendAppSecretAndPin(message);
                         break;
                     // Server sent encrypted AES key
                     case (ushort)HandshakeMessageId.SymmetricKey:
@@ -143,7 +145,7 @@ namespace Encryptide
         /// Gets server's public RSA key, then encrypts app secret to send to the server.
         /// </summary>
         /// <param name="message">Message containing server public RSA key.</param>
-        public void SendAppSecret(Message message)
+        public void SendAppSecretAndPin(Message message)
         {
             // Create a new RSAParameters object with the information
             RSAParameters serverRsaParameters = new RSAParameters();
@@ -151,11 +153,16 @@ namespace Encryptide
             serverRsaParameters.Exponent = message.GetBytes(3);
             RSA serverRsa = RSA.Create(serverRsaParameters);
 
-            // Encrypt and send AppSecret
+            // Encrypt AppSecret and PIN
             byte[] decryptedAppSecret = Encoding.UTF8.GetBytes(AppSecret);
+            byte[] decryptedPin = Encoding.UTF8.GetBytes(PinNumber);
             byte[] encryptedAppSecret = serverRsa.Encrypt(decryptedAppSecret);
+            byte[] encryptedPin = serverRsa.Encrypt(decryptedPin);
+
+            // Add AppSecret and PIN to a message
             Message encryptedMessage = Message.Create(MessageSendMode.Reliable, HandshakeMessageId.AppSecret);
             encryptedMessage.AddBytes(encryptedAppSecret);
+            encryptedMessage.AddBytes(encryptedPin);
 
             // Send the encrypted secret to the server. The message is already encrypted so don't do it again
             Send(encryptedMessage, encryption: Encryption.None);

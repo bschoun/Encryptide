@@ -55,6 +55,16 @@ namespace Encryptide
         private List<ushort> relayFilterIds;
 
         /// <summary>
+        /// PIN number for authenticating connection.
+        /// </summary>
+        public string PinNumber { get; private set; }
+
+        /// <summary>
+        /// Random number generator for PIN number.
+        /// </summary>
+        private System.Random _random = new System.Random();
+
+        /// <summary>
         /// Access to base RelayFilter.
         /// </summary>
         private MessageRelayFilter relayFilter
@@ -124,6 +134,8 @@ namespace Encryptide
             // Create AES key
             aes = Aes.Create();
 
+            PinNumber = GeneratePIN();
+
             // Handle connections with a special function to start handshake process
             HandleConnection = HandleEncryptedConnection;
 
@@ -133,6 +145,15 @@ namespace Encryptide
                 AppSecret = secret;
             }
             this.encryptByDefault = encryptByDefault;
+        }
+
+        /// <summary>
+        /// Generates a random PIN number.
+        /// </summary>
+        /// <returns></returns>
+        private string GeneratePIN()
+        {
+            return _random.Next(0, 9999).ToString("D4");
         }
 
         /// <summary>
@@ -266,7 +287,10 @@ namespace Encryptide
                         RiptideLogger.Log(LogType.Info, LogName, $"Received identification information from client {connection}.");
                         // Read and validate the app secret
                         byte[] encryptedAppSecret = message.GetBytes();
-                        ValidatePendingConnection(encryptedAppSecret, connection);
+
+                        byte[] encryptedPin = message.GetBytes(); // new!
+
+                        ValidatePendingConnection(encryptedAppSecret, encryptedPin, connection);
                         break;
                     default:
                         break;
@@ -324,9 +348,9 @@ namespace Encryptide
         /// </summary>
         /// <param name="encryptedAppSecret">Encrypted AppSecret value.</param>
         /// <param name="connection">Pending connection.</param>
-        private void ValidatePendingConnection(byte[] encryptedAppSecret, Connection connection)
+        private void ValidatePendingConnection(byte[] encryptedAppSecret, byte[] encryptedPin, Connection connection)
         {
-            if (ValidateAppSecret(encryptedAppSecret))
+            if (ValidateAppSecret(encryptedAppSecret) && ValidatePin(encryptedPin))
             {
                 RiptideLogger.Log(LogType.Info, LogName, $"Successfully authenticated client {connection}.");
                 AcceptConnection(connection);
@@ -350,6 +374,17 @@ namespace Encryptide
 
             // Return whether it matches the app secret
             return (Encoding.UTF8.GetString(decryptedAppSecret, 0, decryptedAppSecret.Length) == AppSecret);
+        }
+
+        /// <summary>
+        /// Checks whether the encrypted value provided is the pin number.
+        /// </summary>
+        /// <param name="encryptedPin">Encrypted pin.</param>
+        /// <returns></returns>
+        private bool ValidatePin(byte[] encryptedPin)
+        {
+            byte[] decryptedPin = rsa.Decrypt(encryptedPin);
+            return (Encoding.UTF8.GetString(decryptedPin, 0, decryptedPin.Length) == PinNumber);
         }
 
         /// <summary>
