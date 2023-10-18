@@ -25,7 +25,10 @@ namespace Encryptide
         /// </summary>
         public string AppSecret { private get; set; } = null;
 
-        public string PinNumber { private get; set; } = null;
+        /// <summary>
+        /// PIN number used to connect to a host. 1234 is default.
+        /// </summary>
+        public string PinNumber = "1234";
 
         /// <summary>
         /// Whether to encrypt data by default.

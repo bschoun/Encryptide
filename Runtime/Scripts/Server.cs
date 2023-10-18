@@ -50,14 +50,19 @@ namespace Encryptide
         private bool encryptByDefault = false;
 
         /// <summary>
+        /// Whether to randomly generate PIN number on creation.
+        /// </summary>
+        private bool randomPin = false;
+
+        /// <summary>
         /// List of relay filter ids.
         /// </summary>
         private List<ushort> relayFilterIds;
 
         /// <summary>
-        /// PIN number for authenticating connection.
+        /// PIN number for authenticating connection. Default is 1234.
         /// </summary>
-        public string PinNumber { get; private set; }
+        public string PinNumber = "1234";
 
         /// <summary>
         /// Random number generator for PIN number.
@@ -126,7 +131,7 @@ namespace Encryptide
         #endregion
 
         #region Initialization
-        public Server(string logName = "SERVER", string secret = null, bool encryptByDefault = false) : base(logName)
+        public Server(string logName = "SERVER", string secret = null, bool encryptByDefault = false, bool randomPin = false) : base(logName)
         {
             // Create public/private RSA keys
             rsa = RSA.Create();
@@ -134,8 +139,10 @@ namespace Encryptide
             // Create AES key
             aes = Aes.Create();
 
-            PinNumber = GeneratePIN();
-
+            if (randomPin) {
+                PinNumber = GeneratePIN();
+            }
+            
             // Handle connections with a special function to start handshake process
             HandleConnection = HandleEncryptedConnection;
 
@@ -145,6 +152,7 @@ namespace Encryptide
                 AppSecret = secret;
             }
             this.encryptByDefault = encryptByDefault;
+            this.randomPin = randomPin;
         }
 
         /// <summary>
